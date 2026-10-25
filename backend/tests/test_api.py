@@ -43,3 +43,8 @@ def test_order_insufficient_stock(client):
     r = client.post("/api/orders", json={"product_id": 1, "quantity": 10_000})
     assert r.status_code == 409 and r.json()["detail"] == "Not enough stock"
     assert client.get("/api/products/1").json()["stock"] == 20
+
+
+def test_products_list_contains_stock_cell(client):
+    p = client.get("/api/products").json()[3]
+    assert p["name"] == "Desk Plant" and isinstance(p["stock"], int) and p["stock"] == 3
