@@ -31,7 +31,7 @@ export default function ProductsPage() {
         <tbody>
           {products.map((p) => (
             <tr key={p.id}>
-              <td>{p.name}</td>
+              <td>{p.name}{p.stock < 5 && <span className="badge">Low stock</span>}</td>
               <td>${p.price.toFixed(2)}</td>
               <td>{p.stock}</td>
               <td><Link to={`/products/${p.id}`}>Edit</Link></td>
