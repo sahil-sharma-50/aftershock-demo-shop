@@ -1,6 +1,9 @@
+import csv
+import io
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -27,6 +30,17 @@ class OrderOut(BaseModel):
 @router.get("/orders", response_model=list[OrderOut])
 def list_orders(s: Session = Depends(get_session)):
     return repo.list_orders(s)
+
+
+@router.get("/orders/export.csv")
+def export_orders(s: Session = Depends(get_session)):
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["id", "product", "quantity", "total", "created_at"])
+    for o in repo.list_orders(s):
+        product = repo.get_product(s, o["product_id"])
+        w.writerow([o["id"], product.name, o["quantity"], f"{o['total']:.2f}", o["created_at"].isoformat()])
+    return Response(buf.getvalue(), media_type="text/csv")
 
 
 @router.post("/orders", response_model=OrderOut, status_code=201)

@@ -41,6 +41,7 @@ export default function OrdersPage() {
         <button type="submit">Place order</button>
         {error && <span className="error" role="alert">{error}</span>}
       </form>
+      <p><a href="/api/orders/export.csv" download>Export CSV</a></p>
       <table>
         <thead><tr><th>Order</th><th>Product</th><th>Quantity</th><th>Total</th><th>Placed</th></tr></thead>
         <tbody>
