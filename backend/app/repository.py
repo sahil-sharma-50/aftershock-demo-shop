@@ -12,17 +12,38 @@ class InsufficientStock(Exception):
     pass
 
 
+# cache product reads; export iterates all orders and looks up each product
+_product_cache: dict[int, Product] = {}
+_list_cache: dict[str, list[Product]] = {}
+
+
+def clear_caches() -> None:
+    _product_cache.clear()
+    _list_cache.clear()
+
+
 def list_products(s: Session, q: str | None = None) -> list[Product]:
+    key = (q or "").lower()
+    if key in _list_cache:
+        return list(_list_cache[key])
     stmt = select(Product).order_by(Product.id)
     if q:
         stmt = stmt.where(func.lower(Product.name).contains(q.lower(), autoescape=True))
-    return list(s.scalars(stmt))
+    rows = list(s.scalars(stmt))
+    for p in rows:
+        s.expunge(p)
+    _list_cache[key] = rows
+    return list(rows)
 
 
 def get_product(s: Session, id: int) -> Product:
+    if id in _product_cache:
+        return _product_cache[id]
     p = s.get(Product, id)
     if p is None:
         raise NotFound(f"Product {id} not found")
+    s.expunge(p)
+    _product_cache[id] = p
     return p
 
 
@@ -41,7 +62,9 @@ def create_product(s: Session, name: str, price: float, stock: int) -> Product:
 
 
 def update_product(s: Session, id: int, name: str, price: float) -> Product:
-    p = get_product(s, id)
+    p = s.get(Product, id)
+    if p is None:
+        raise NotFound(f"Product {id} not found")
     p.name, p.price = name, price
     s.commit()
     return p
@@ -54,6 +77,7 @@ def adjust_stock(s: Session, id: int, delta: int) -> Product:
         raise InsufficientStock("Not enough stock")
     p.stock += delta
     s.commit()
+    clear_caches()
     return p
 
 
@@ -84,6 +108,7 @@ def create_order(s: Session, product_id: int, quantity: int) -> dict:
     o = Order(product_id=p.id, quantity=quantity, total=round(p.price * quantity, 2))
     s.add(o)
     s.commit()
+    clear_caches()
     return _order_dict(o, p.name)
 
 
