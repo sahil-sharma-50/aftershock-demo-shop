@@ -16,3 +16,5 @@ jobs:
         run: pip install -e "backend[test]"
       - name: Test
         run: pytest backend -v
+        env:
+          TELEMETRY_DISABLED: "1"
