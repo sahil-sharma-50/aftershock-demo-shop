@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 def client(monkeypatch):
     # tempfile instead of tmp_path: pytest's shared temp root can be unreadable on some Windows setups
     d = Path(tempfile.mkdtemp(prefix="demo-shop-test-"))
+    monkeypatch.setenv("TELEMETRY_DISABLED", "1")
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{(d / 'test.db').as_posix()}")
     from app import db
 
